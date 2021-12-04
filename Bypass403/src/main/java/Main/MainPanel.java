@@ -2,18 +2,12 @@ package Main;
 
 import burp.BurpExtender;
 import burp.ITab;
+import org.apache.commons.lang3.StringUtils;
 
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
-import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
+import javax.swing.*;
 
 /**
  * Main display panel
@@ -21,6 +15,7 @@ import javax.swing.JTabbedPane;
 public class MainPanel extends JPanel implements ITab {
 
     private BypassTableModel bypassTableModel;
+    private JTextField threadNumText;
 
     public MainPanel() {
 
@@ -45,9 +40,14 @@ public class MainPanel extends JPanel implements ITab {
         splitPane.setRightComponent(tabs);
 
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+//
+//        JLabel toolLabel = new JLabel("Tool: ");
+//        controlPanel.add(toolLabel);
 
-        JLabel toolLabel = new JLabel("Select tool: ");
-        controlPanel.add(toolLabel);
+        JLabel filterLabel = new JLabel("Thread Num:");
+        controlPanel.add(filterLabel);
+        threadNumText = new JTextField(10);
+        controlPanel.add(threadNumText);
 
         JButton clearButton = new JButton("Clear");
 
@@ -73,6 +73,15 @@ public class MainPanel extends JPanel implements ITab {
     public Component getUiComponent() {
 
         return this;
+    }
+
+    public int getThreadNum() {
+
+        if(StringUtils.isBlank(threadNumText.getText())) {
+            return 5;
+        }
+
+        return Integer.parseInt(threadNumText.getText());
     }
 
     public BypassTableModel getBypassTableModel() {

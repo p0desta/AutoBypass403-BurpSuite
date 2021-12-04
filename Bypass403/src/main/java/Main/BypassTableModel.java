@@ -40,7 +40,7 @@ public class BypassTableModel extends AbstractTableModel {
 
     public int getColumnCount() {
 
-        return 7;
+        return 6;
     }
 
     @Override
@@ -58,8 +58,6 @@ public class BypassTableModel extends AbstractTableModel {
             case 4:
                 return "MIME Type";
             case 5:
-                return "Timeout";
-            case 6:
                 return "HTTP Status";
             default:
                 return "";
@@ -81,8 +79,6 @@ public class BypassTableModel extends AbstractTableModel {
             case 4:
                 return String.class;
             case 5:
-                return Long.class;
-            case 6:
                 return Short.class;
             default:
                 return Object.class;
@@ -105,8 +101,6 @@ public class BypassTableModel extends AbstractTableModel {
             case 4:
                 return bypassEntry.mimeType;
             case 5:
-                return bypassEntry.time;
-            case 6:
                 return bypassEntry.status;
             default:
                 return "";

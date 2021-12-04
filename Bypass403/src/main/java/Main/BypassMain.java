@@ -12,8 +12,12 @@ import java.awt.event.ActionListener;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class BypassMain implements IContextMenuFactory {
+//    private static int thread_num = 5;
+
     public List<BaseRequest> make_suffix(String prefix, String target) {
         List<BaseRequest> baseRequestList = new ArrayList();
         Map<String, String> headers = new HashMap();
@@ -165,13 +169,6 @@ public class BypassMain implements IContextMenuFactory {
             allRequests.addAll(make_suffix(prefix, target));
         }
 
-
-//        allRequests.addAll(make_suffix(prefix, target + "/"));
-//
-//        allRequests.addAll(make_suffix(prefix, target));
-
-
-
         // 对负一节点进行fuzz
         if (paths.length > 1) {
             suffix = paths[paths.length-1];
@@ -199,6 +196,70 @@ public class BypassMain implements IContextMenuFactory {
     }
 
 
+    class Run_request implements Runnable {
+        private BaseRequest baseRequest;
+        private String old_path;
+        private String old_request;
+        private String old_method;
+        private IHttpRequestResponse iHttpRequestResponse;
+
+        public Run_request(BaseRequest baseRequest, String old_path, String old_request, String old_method,IHttpRequestResponse iHttpRequestResponse) {
+            this.baseRequest = baseRequest;
+            this.old_method = old_method;
+            this.old_path = old_path;
+            this.old_request = old_request;
+            this.iHttpRequestResponse = iHttpRequestResponse;
+        }
+
+        @Override
+        public void run() {
+
+            String method = baseRequest.method;
+            String path = baseRequest.path;
+            Map<String, String> headers = baseRequest.headers;
+            String new_request = "";
+
+            new_request = old_request.replaceFirst(old_path, path);
+            if (method == "GET") {
+                if (headers != null) {
+                    new_request = old_request.replaceFirst(old_path, path);
+
+                    for(Map.Entry<String, String> map: headers.entrySet()) {
+                        String key = map.getKey();
+                        String value = map.getValue();
+                        new_request = new_request.replaceFirst("User-Agent: ", key + ": " + value + "\r\nUser-Agent: ");
+                    }
+
+                }
+            } else if(method == "POST"){
+                if(old_method == "GET") {
+                    new_request = old_request.replaceFirst("GET", "POST");
+                } else if (old_method == "POST") {
+                    new_request = old_request.replaceFirst("POST", "GET");
+                }
+
+            } else if (method == "TRACE") {
+                if(old_method == "GET") {
+                    new_request = old_request.replaceFirst("GET", "TRACE");
+                } else if (old_method == "POST") {
+                    new_request = old_request.replaceFirst("POST", "TRACE");
+                }
+            }
+
+            try {
+                IHttpRequestResponse resRequestReponse = Utils.callbacks.makeHttpRequest(iHttpRequestResponse.getHttpService(), Utils.helpers.stringToBytes(new_request));
+                if (resRequestReponse != null) {
+                    addLog(resRequestReponse, 0, 0, 0);
+                }
+
+
+            }catch(Throwable ee) {
+
+            }
+        }
+    }
+
+
     @Override
     public List<JMenuItem> createMenuItems(final IContextMenuInvocation invocation) {
         List<JMenuItem> list;
@@ -209,63 +270,26 @@ public class BypassMain implements IContextMenuFactory {
 
             jMenuItem.addActionListener(new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    IHttpRequestResponse iHttpRequestResponse = invocation.getSelectedMessages()[0];
-
-                    String old_path = Utils.helpers.analyzeRequest(iHttpRequestResponse).getUrl().getPath();
-                    String old_request = Utils.helpers.bytesToString(iHttpRequestResponse.getRequest());
-                    String old_method = Utils.helpers.analyzeRequest(iHttpRequestResponse).getMethod();
 
                     new Thread(() -> {
+                        IHttpRequestResponse iHttpRequestResponse = invocation.getSelectedMessages()[0];
+
+                        String old_path = Utils.helpers.analyzeRequest(iHttpRequestResponse).getUrl().getPath();
+                        String old_request = Utils.helpers.bytesToString(iHttpRequestResponse.getRequest());
+                        String old_method = Utils.helpers.analyzeRequest(iHttpRequestResponse).getMethod();
 
                         List<BaseRequest> allRequests;
                         allRequests = make_payload(old_path);
 
+                        int thread_num = Utils.panel.getThreadNum();
+
+
+                        Utils.out("start thread, number: " + String.valueOf(thread_num) + " path: " + old_path);
+                        ExecutorService es = Executors.newFixedThreadPool(thread_num);
                         for(BaseRequest baseRequest: allRequests) {
-
-                            String method = baseRequest.method;
-                            String path = baseRequest.path;
-                            Map<String, String> headers = baseRequest.headers;
-                            String new_request = "";
-
-                            new_request = old_request.replaceFirst(old_path, path);
-                            if (method == "GET") {
-                                if (headers != null) {
-                                    new_request = old_request.replaceFirst(old_path, path);
-
-                                    for(Map.Entry<String, String> map: headers.entrySet()) {
-                                        String key = map.getKey();
-                                        String value = map.getValue();
-                                        new_request = new_request.replaceFirst("User-Agent: ", key + ": " + value + "\r\nUser-Agent: ");
-                                    }
-
-                                }
-                            } else if(method == "POST"){
-                                if(old_method == "GET") {
-                                    new_request = old_request.replaceFirst("GET", "POST");
-                                } else if (old_method == "POST") {
-                                    new_request = old_request.replaceFirst("POST", "GET");
-                                }
-
-                            } else if (method == "TRACE") {
-                                if(old_method == "GET") {
-                                    new_request = old_request.replaceFirst("GET", "TRACE");
-                                } else if (old_method == "POST") {
-                                    new_request = old_request.replaceFirst("POST", "TRACE");
-                                }
-                            }
-
-                            try {
-                                IHttpRequestResponse resRequestReponse = Utils.callbacks.makeHttpRequest(iHttpRequestResponse.getHttpService(), Utils.helpers.stringToBytes(new_request));
-                                if (resRequestReponse != null) {
-                                    addLog(resRequestReponse, 0, 0, 0);
-                                }
-
-
-                            }catch(Throwable ee) {
-
-                            }
-
+                            es.submit(new Run_request(baseRequest, old_path, old_request, old_method, iHttpRequestResponse));
                         }
+                        es.shutdown();
                     }).start();
 
                 }
@@ -283,8 +307,12 @@ public class BypassMain implements IContextMenuFactory {
                 Utils.callbacks.saveBuffersToTempFiles(messageInfo),
                 Utils.helpers.analyzeRequest(messageInfo).getUrl(),
                 Utils.helpers.analyzeResponse(messageInfo.getResponse()).getStatusCode(),
-                Utils.helpers.analyzeResponse(messageInfo.getResponse()).getStatedMimeType(),
-                time));
+                Utils.helpers.analyzeResponse(messageInfo.getResponse()).getStatedMimeType()));
         Utils.panel.getBypassTableModel().fireTableRowsInserted(row, row);
     }
+
+
+//    public void setThread_num(int number) {
+//        thread_num = number;
+//    }
 }

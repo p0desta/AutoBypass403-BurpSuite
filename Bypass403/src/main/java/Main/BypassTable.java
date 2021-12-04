@@ -42,13 +42,12 @@ public class BypassTable extends JTable implements IMessageEditorController {
         this.requestViewer = BurpExtender.callbacks.createMessageEditor(this, false);
         this.responseViewer = BurpExtender.callbacks.createMessageEditor(this, false);
         setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
-        getColumnModel().getColumn(0).setMinWidth(180);
+        getColumnModel().getColumn(0).setMinWidth(250);
         getColumnModel().getColumn(1).setMinWidth(100);
         getColumnModel().getColumn(2).setMinWidth(100);
-        getColumnModel().getColumn(3).setPreferredWidth(1000);
-        getColumnModel().getColumn(4).setMinWidth(80);
+        getColumnModel().getColumn(3).setPreferredWidth(1100);
+        getColumnModel().getColumn(4).setMinWidth(100);
         getColumnModel().getColumn(5).setMinWidth(100);
-        getColumnModel().getColumn(6).setMinWidth(100);
         setAutoCreateRowSorter(true);
     }
 

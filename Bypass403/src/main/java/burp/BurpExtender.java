@@ -8,8 +8,8 @@ public class BurpExtender implements IBurpExtender {
     private IExtensionHelpers helpers;
     public static IBurpExtenderCallbacks callbacks;
     private MainPanel panel;
-    private String NAME = "bypass 403";
-    private String VERSION = "1.0.0";
+    private String NAME = "Bypass 403";
+    private String VERSION = "1.1.0";
 
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
     {
@@ -36,7 +36,7 @@ public class BurpExtender implements IBurpExtender {
 
     private void banner() {
         this.stdout.println("===================================");
-        this.stdout.println(String.format("%s loader success", NAME));
+        this.stdout.println(String.format("%s loaded success", NAME));
         this.stdout.println(String.format("version: %s", VERSION));
         this.stdout.println("===================================");
     }
