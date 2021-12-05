@@ -1,7 +1,16 @@
 # AutoBypass403-BurpSuite
 A burpsuite plugin help me automatic bypass 403.
 
+申明：该工具只用于安全自测，禁止用于非法用途
+
 ## ChangeLog
+
+#### 2021-12-05
+
+* support multiple messages send to bypass403
+* add multiple rules from @Laura_小狮子
+* add number of requests to show
+* Increase similarity matching(from @pmiaowu HostCollision); if the response is the same, it will not be displayed
 
 #### 2021-12-04
 
@@ -27,7 +36,7 @@ A burpsuite plugin help me automatic bypass 403.
 
 4. Select the plugin table and analyze the results
 
-   ![image-20211204120817213](README_picture/image-20211204120817213.png)
+   ![image-20211205121741248](README_picture/image-20211205121741248.png)
 
    
 

@@ -16,6 +16,9 @@ public class MainPanel extends JPanel implements ITab {
 
     private BypassTableModel bypassTableModel;
     private JTextField threadNumText;
+    private JTextField allRequestNumberText;
+    private JTextField finishRequestNumberText;
+    private JTextField errorRequestNumText;
 
     public MainPanel() {
 
@@ -40,14 +43,38 @@ public class MainPanel extends JPanel implements ITab {
         splitPane.setRightComponent(tabs);
 
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-//
-//        JLabel toolLabel = new JLabel("Tool: ");
-//        controlPanel.add(toolLabel);
 
-        JLabel filterLabel = new JLabel("Thread Num:");
-        controlPanel.add(filterLabel);
+
+        JLabel threadNumLabel = new JLabel("Thread Num:");
+        controlPanel.add(threadNumLabel);
+
         threadNumText = new JTextField(10);
+        threadNumText.setText("5");
         controlPanel.add(threadNumText);
+
+
+        JLabel allRequestNumberLabel = new JLabel("AllRequest Num:");
+        controlPanel.add(allRequestNumberLabel);
+        allRequestNumberText = new JTextField(5);
+        allRequestNumberText.setText("0");
+        allRequestNumberText.setEditable(false);
+        controlPanel.add(allRequestNumberText);
+
+        JLabel finishNumberLabel = new JLabel("Finish Num:");
+        controlPanel.add(finishNumberLabel);
+        finishRequestNumberText = new JTextField(5);
+        finishRequestNumberText.setText("0");
+        finishRequestNumberText.setEditable(false);
+        controlPanel.add(finishRequestNumberText);
+
+
+        JLabel errorRequestNumLabel = new JLabel("Error Num:");
+        controlPanel.add(errorRequestNumLabel);
+        errorRequestNumText = new JTextField(5);
+        errorRequestNumText.setText("0");
+        errorRequestNumText.setEditable(false);
+        controlPanel.add(errorRequestNumText);
+
 
         JButton clearButton = new JButton("Clear");
 
@@ -56,6 +83,9 @@ public class MainPanel extends JPanel implements ITab {
         clearButton.addActionListener(e -> {
             bypassTableModel.getBypassArray().clear();
             bypassTableModel.fireTableDataChanged();
+            allRequestNumberText.setText("0");
+            finishRequestNumberText.setText("0");
+            errorRequestNumText.setText("0");
         });
 
         controlPanel.setAlignmentX(0);
@@ -87,6 +117,22 @@ public class MainPanel extends JPanel implements ITab {
     public BypassTableModel getBypassTableModel() {
 
         return bypassTableModel;
+    }
+
+    public void setAllRequestNumberText(int num) {
+        allRequestNumberText.setText(String.valueOf(num));
+    }
+
+    public void addAllRequestNum(int num) {
+        setAllRequestNumberText(Integer.parseInt(allRequestNumberText.getText()) + num);
+    }
+
+    public void addFinishRequestNum(int num) {
+        finishRequestNumberText.setText(String.valueOf(Integer.parseInt(finishRequestNumberText.getText()) + num));
+    }
+
+    public void addErrorRequestNum(int num) {
+        errorRequestNumText.setText(String.valueOf(Integer.parseInt(errorRequestNumText.getText()) + num));
     }
 
 }

