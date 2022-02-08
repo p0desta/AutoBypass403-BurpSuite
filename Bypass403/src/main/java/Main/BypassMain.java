@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -13,6 +14,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class BypassMain implements IContextMenuFactory {
+
+    private final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
     public List<BaseRequest> make_suffix(String prefix, String target) {
         List<BaseRequest> baseRequestList = new ArrayList();
@@ -29,6 +32,7 @@ public class BypassMain implements IContextMenuFactory {
         baseRequestList.add(new BaseRequest("GET",   prefix + "//" + target, null));
 
         baseRequestList.add(new BaseRequest("GET",   prefix + "/./" + target + "/./", null));
+        baseRequestList.add(new BaseRequest("GET",   prefix + "/#/../" + target + "/./", null));
 
 
         headers.put("X-Custom-IP-Authorization", "127.0.0.1");
@@ -258,8 +262,8 @@ public class BypassMain implements IContextMenuFactory {
                 IHttpRequestResponse resRequestReponse = Utils.callbacks.makeHttpRequest(iHttpRequestResponse.getHttpService(), Utils.helpers.stringToBytes(new_request));
 
 
-                String old_response = new String(iHttpRequestResponse.getResponse());
-                String new_response = new String(resRequestReponse.getResponse());
+                String old_response = new String(iHttpRequestResponse.getResponse(), "utf-8");
+                String new_response = new String(resRequestReponse.getResponse(), "utf-8");
                 short old_status = Utils.helpers.analyzeResponse(iHttpRequestResponse.getResponse()).getStatusCode();
                 short new_status = Utils.helpers.analyzeResponse(resRequestReponse.getResponse()).getStatusCode();
 
@@ -267,7 +271,9 @@ public class BypassMain implements IContextMenuFactory {
                 addFinishRequestNum(1);
 
                 if (resRequestReponse != null && (DiffPage.getRatio(old_response, new_response) < 0.8 ||  old_status != new_status)) {
-                    addLog(resRequestReponse, 0, 0, 0);
+
+                    String title = Utils.getBodyTitle(new_response);
+                    addLog(resRequestReponse, 0, 0, 0, title);
                 }
 
 
@@ -326,15 +332,16 @@ public class BypassMain implements IContextMenuFactory {
         return list;
     }
 
-    private void addLog(IHttpRequestResponse messageInfo, int toolFlag, long time, int row) {
+    private void addLog(IHttpRequestResponse messageInfo, int toolFlag, long time, int row, String title) {
 
         Utils.panel.getBypassTableModel().getBypassArray().add(new Bypass(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()),
                 Utils.helpers.analyzeRequest(messageInfo).getMethod(),
-                String.valueOf(Utils.helpers.analyzeRequest(messageInfo).getBodyOffset()),
+                String.valueOf(messageInfo.getResponse().length),
                 Utils.callbacks.saveBuffersToTempFiles(messageInfo),
                 Utils.helpers.analyzeRequest(messageInfo).getUrl(),
                 Utils.helpers.analyzeResponse(messageInfo.getResponse()).getStatusCode(),
-                Utils.helpers.analyzeResponse(messageInfo.getResponse()).getStatedMimeType()));
+                Utils.helpers.analyzeResponse(messageInfo.getResponse()).getStatedMimeType(),
+                title));
         Utils.panel.getBypassTableModel().fireTableRowsInserted(row, row);
     }
 

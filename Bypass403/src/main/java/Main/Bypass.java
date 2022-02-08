@@ -14,8 +14,9 @@ public class Bypass {
     final short status;
     final String mimeType;
     final String method;
+    final String title;
 
-    public Bypass(String timestamp, String method , String length, IHttpRequestResponsePersisted requestResponse, URL url, short status, String mimeType) {
+    public Bypass(String timestamp, String method , String length, IHttpRequestResponsePersisted requestResponse, URL url, short status, String mimeType, String title) {
 
         this.timestamp = timestamp;
         this.method = method;
@@ -24,6 +25,7 @@ public class Bypass {
         this.url = url;
         this.status = status;
         this.mimeType = mimeType;
+        this.title = title;
     }
 }
 
