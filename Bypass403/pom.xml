@@ -6,7 +6,7 @@
 
     <groupId>com.Bypass</groupId>
     <artifactId>Bypass</artifactId>
-    <version>1.0.0</version>
+    <version>1.4.0</version>
 
     <dependencies>
         <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-lang3 -->
