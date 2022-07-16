@@ -9,7 +9,7 @@ public class BurpExtender implements IBurpExtender {
     public static IBurpExtenderCallbacks callbacks;
     private MainPanel panel;
     private String NAME = "Bypass 403";
-    private String VERSION = "1.3.0";
+    private String VERSION = "1.4.0";
 
     public void registerExtenderCallbacks(IBurpExtenderCallbacks callbacks)
     {
